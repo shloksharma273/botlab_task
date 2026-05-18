@@ -260,7 +260,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>0.012 0 0</cp>
       <forward>0 1 0</forward>
       <upward>0 0 1</upward>
@@ -270,7 +270,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>-0.012 0 0</cp>
       <forward>0 -1 0</forward>
       <upward>0 0 1</upward>
@@ -282,7 +282,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>0.012 0 0</cp>
       <forward>0 -1 0</forward>
       <upward>0 0 1</upward>
@@ -292,7 +292,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>-0.012 0 0</cp>
       <forward>0 1 0</forward>
       <upward>0 0 1</upward>
@@ -304,7 +304,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>0.012 0 0</cp>
       <forward>0 1 0</forward>
       <upward>0 0 1</upward>
@@ -314,7 +314,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>-0.012 0 0</cp>
       <forward>0 -1 0</forward>
       <upward>0 0 1</upward>
@@ -326,7 +326,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>0.012 0 0</cp>
       <forward>0 -1 0</forward>
       <upward>0 0 1</upward>
@@ -336,7 +336,7 @@
       <a0>0.3</a0><alpha_stall>1.4</alpha_stall>
       <cla>4.2500</cla><cda>0.10</cda><cma>0.0</cma>
       <cla_stall>-0.025</cla_stall><cda_stall>0.0</cda_stall><cma_stall>0.0</cma_stall>
-      <area>3.2e-4</area><air_density>1.2041</air_density>
+      <area>4e-4</area><air_density>1.2041</air_density>
       <cp>-0.012 0 0</cp>
       <forward>0 1 0</forward>
       <upward>0 0 1</upward>
@@ -432,5 +432,167 @@
         <controlVelocitySlowdownSim>0</controlVelocitySlowdownSim>
       </control>
     </plugin>
+
+    <!-- =====================  GIMBAL  =====================
+         gimbal_small_1d scaled to fit a Crazyflie (mesh scale 0.0003 = 3× smaller
+         than the original 0.001).  Total payload: 15 g base + 5 g tilt = 20 g.
+
+         Rotation: roll = -1.5708 rad (-90°) on gimbal_base so the arm that
+         originally extended in the local +Y direction now points straight down
+         (-Z world), hanging the camera below the drone.
+
+         The gimbal_base origin sits 3 cm below the crazyflie/body centre
+         (body bottom is at -1.5 cm, so the mount clears the body by 1.5 cm).
+    -->
+    <link name="gimbal_base">
+      <pose>0.01 0 -0.03 -1.5708 -3.14 0</pose>
+      <inertial>
+        <mass>0.015</mass>
+        <inertia>
+          <ixx>7.5e-6</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>7.5e-6</iyy><iyz>0</iyz>
+          <izz>7.5e-6</izz>
+        </inertia>
+      </inertial>
+      <visual name="gimbal_base_main_viz">
+        <geometry>
+          <mesh>
+            <scale>0.0003 0.0003 0.0003</scale>
+            <uri>model://gimbal_small_1d/meshes/base_main.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1</ambient>
+          <diffuse>0.1 0.1 0.1</diffuse>
+          <specular>0.01 0.01 0.01 1.0</specular>
+        </material>
+      </visual>
+      <visual name="gimbal_base_arm_viz">
+        <geometry>
+          <mesh>
+            <scale>0.0003 0.0003 0.0003</scale>
+            <uri>model://gimbal_small_1d/meshes/base_arm.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.1 0.1 0.1</ambient>
+          <diffuse>0.1 0.1 0.1</diffuse>
+          <specular>0.01 0.01 0.01 1.0</specular>
+        </material>
+      </visual>
+      <collision name="gimbal_base_col">
+        <pose>0.003 0.0225 -0.0075 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.03 0.015 0.045</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="gimbal_tilt">
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5e-6</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>5e-6</iyy><iyz>0</iyz>
+          <izz>5e-6</izz>
+        </inertia>
+      </inertial>
+      <visual name="gimbal_tilt_viz">
+        <pose>0 0 -0.0015 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.0003 0.0003 0.0003</scale>
+            <uri>model://gimbal_small_1d/meshes/tilt.dae</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.4 0.4 0.4</ambient>
+          <diffuse>0.4 0.4 0.4</diffuse>
+          <specular>0.1 0.1 0.1 1.0</specular>
+        </material>
+      </visual>
+      <collision name="gimbal_tilt_col">
+        <pose>0 0 -0.0015 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.0003 0.0003 0.0003</scale>
+            <uri>model://gimbal_small_1d/meshes/tilt.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name="gimbal_camera_viz">
+        <pose>0 0 0.006 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0075</radius>
+            <length>0.015</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.4 0.4 0.4</ambient>
+          <diffuse>0.4 0.4 0.4</diffuse>
+          <specular>0.1 0.1 0.1 1.0</specular>
+        </material>
+      </visual>
+      <collision name="gimbal_camera_col">
+        <pose>0 0 0.006 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0075</radius>
+            <length>0.015</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <sensor name="gimbal_camera" type="camera">
+        <topic>/gimbal_camera</topic>
+        <pose degrees="true">0 0 0 -90 -90 0</pose>
+        <camera>
+          <horizontal_fov>2.0</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>15000</far>
+          </clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>10</update_rate>
+        <visualize>1</visualize>
+        <plugin name="GstCameraPlugin" filename="GstCameraPlugin">
+          <udp_host>127.0.0.1</udp_host>
+          <udp_port>5600</udp_port>
+          <use_basic_pipeline>true</use_basic_pipeline>
+          <use_cuda>false</use_cuda>
+        </plugin>
+      </sensor>
+    </link>
+
+    <!-- Fixed joint: drone body → gimbal base -->
+    <joint name="gimbal_attach_joint" type="fixed">
+      <parent>crazyflie/body</parent>
+      <child>gimbal_base</child>
+    </joint>
+
+    <!-- Gimbal pitch joint — rotates tilt_link around the X axis -->
+    <joint name="gimbal_tilt_joint" type="revolute">
+      <parent>gimbal_base</parent>
+      <child>gimbal_tilt</child>
+      <pose>0 0 0.006 0 0 0</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <dynamics>
+          <damping>0.01</damping>
+        </dynamics>
+        <limit>
+          <lower>-3.1415926</lower>
+          <upper>3.1415926</upper>
+        </limit>
+      </axis>
+    </joint>
+
   </model>
 </sdf>
