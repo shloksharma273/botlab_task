@@ -415,4 +415,121 @@ After this change, run SITL once with `-w` to wipe EEPROM so the new
 - `MOT_THST_HOVER` will self-correct after a few hover cycles; the 0.72 value
   is a calculated starting point to prevent ArduCopter from refusing takeoff.
 
+---
+
+## 2026-05-19 — MAVLink 1-DOF gimbal interface
+
+### Context
+The crazyflie model already had a `gimbal_tilt_joint` (revolute, X-axis) and
+`gimbal_tilt` link defined in `model.sdf`, but the joint was not wired to any
+ArduPilot servo output — nothing could command it. The task was to expose
+gimbal pitch control over MAVLink using `MAV_CMD_DO_MOUNT_CONFIGURE` and
+`MAV_CMD_DO_MOUNT_CONTROL`.
+
+### Signal path
+```
+gimbal_control.py
+  → MAVLink UDP 14550
+    → ArduPilot SITL  (mount subsystem → SERVO5 PWM output)
+      → ArduPilotPlugin channel 4  (POSITION type)
+        → gimbal_tilt_joint  (Gazebo physics)
+```
+
+### Changes
+
+#### 1. `crazyflie/model.sdf` — added gimbal control channel to ArduPilotPlugin
+
+A fifth `<control>` block was appended inside the ArduPilotPlugin:
+
+```xml
+<control channel="4">
+  <jointName>gimbal_tilt_joint</jointName>
+  <useForce>0</useForce>
+  <type>POSITION</type>
+  <multiplier>3.14159</multiplier>
+  <offset>-1.5708</offset>
+  <servo_min>1000</servo_min>
+  <servo_max>2000</servo_max>
+</control>
+```
+
+**Channel 4** (0-indexed) corresponds to **SERVO5** in ArduPilot's 1-indexed
+servo output numbering. ArduPilot routes `MNT1_PITCH` to this output when
+`SERVO5_FUNCTION=7` (Mount1Pitch).
+
+**`type=POSITION`** / **`useForce=0`**: the plugin calls `SetPosition` on the
+joint directly, bypassing force/torque — correct for a servo gimbal where the
+actuator holds a commanded angle.
+
+**PWM→angle mapping** (`offset + multiplier × normalized`):
+
+| PWM | normalized | joint angle |
+|-----|-----------|------------|
+| 1000 | 0.0 | −π/2 rad (−90°, camera points down / nadir) |
+| 1500 | 0.5 | 0 rad (0°, camera level) |
+| 2000 | 1.0 | +π/2 rad (+90°, camera points up) |
+
+The limits match `MNT1_PITCH_MIN=-90` / `MNT1_PITCH_MAX=90` in the param file.
+
+#### 2. `crazyflie_gimbal.parm` — new ArduPilot parameter file
+
+Created `assignment/crazyflie_gimbal.parm` for the 1-DOF servo gimbal. Load
+alongside the base crazyflie params:
+```bash
+sim_vehicle.py ... --add-param-file=assignment/crazyflie_gimbal.parm
+```
+
+Key parameters:
+
+| Parameter | Value | Reason |
+|-----------|-------|--------|
+| `MNT1_TYPE` | 1 | Enable the ArduPilot servo-mount subsystem |
+| `MNT1_PITCH_MIN` | −90 | Clamp to joint limits |
+| `MNT1_PITCH_MAX` | 90 | Clamp to joint limits |
+| `SERVO5_FUNCTION` | 7 | Route Mount1Pitch to SERVO5 (channel 4 in plugin) |
+| `SERVO5_MIN/MAX/TRIM` | 1000/2000/1500 | Full range; neutral = level |
+
+Roll and yaw limits are set to 0 — the gimbal has only one DOF (pitch around
+the X-axis).
+
+#### 3. `gimbal_control.py` — MAVLink controller script
+
+Created `assignment/gimbal_control.py`. Uses **pymavlink** to connect to
+ArduPilot SITL and issue gimbal commands.
+
+**`MAV_CMD_DO_MOUNT_CONFIGURE` (cmd 204)**
+Switches Mount 1 to `MAV_MOUNT_MODE_MAVLINK_TARGETING` (mode 4) so that
+subsequent `DO_MOUNT_CONTROL` commands are accepted instead of RC-override
+inputs. `param3=1` requests pitch stabilisation.
+
+**`MAV_CMD_DO_MOUNT_CONTROL` (cmd 205)**
+Commands pitch (param1, degrees), roll (param2, always 0), yaw (param3,
+degrees). For a 1-DOF mount only pitch is exercised. Clamped client-side to
+`[MNT1_PITCH_MIN, MNT1_PITCH_MAX]` before sending.
+
+**Usage:**
+```bash
+# Sweep demo (default, no args)
+python3 assignment/gimbal_control.py
+
+# Single pitch command
+python3 assignment/gimbal_control.py -- -45    # camera tilts 45° down
+python3 assignment/gimbal_control.py 30        # camera tilts 30° up
+
+# Push mount params at runtime (skips .parm file requirement)
+python3 assignment/gimbal_control.py --push-params --sweep
+
+# Interactive prompt
+python3 assignment/gimbal_control.py -i
+
+# Custom connection (e.g. TCP SITL)
+python3 assignment/gimbal_control.py --conn tcp:127.0.0.1:5760
+```
+
+### Files changed
+| File | Change |
+|------|--------|
+| `crazyflie/model.sdf` | Added `<control channel="4">` for `gimbal_tilt_joint` |
+| `crazyflie_gimbal.parm` | New — ArduPilot servo-mount parameters |
+| `gimbal_control.py` | New — MAVLink gimbal controller (pymavlink) |
 

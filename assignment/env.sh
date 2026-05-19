@@ -7,6 +7,11 @@
 # Harmonic (gz-sim8) and fails with "target gz-sim::gz-sim not found".
 export GZ_VERSION=garden
 
+# Force GZ transport to use loopback so all processes (gz sim, ros_gz_bridge,
+# gz topic CLI) discover each other on 127.0.0.1 instead of the Docker bridge
+# (172.17.0.1), which Docker's multicast filtering blocks.
+export GZ_IP=127.0.0.1
+
 # Folder containing models (must contain a directory named exactly `crazyflie`
 # because the SDF references mesh URIs like model://crazyflie/meshes/...).
 export GZ_SIM_RESOURCE_PATH=$HOME/botlab_ws/src/assignment:\

@@ -1,0 +1,20 @@
+# ArduPilot parameters for Crazyflie 1-DOF servo gimbal (pitch only).
+# Load after the base crazyflie params:
+#   sim_vehicle.py ... --add-param-file=<path>/crazyflie_gimbal.parm
+
+# Mount 1: servo-driven, pitch-only
+MNT1_TYPE           1       # 1 = Servo mount (enables the mount subsystem)
+MNT1_PITCH_MIN      -90     # degrees — matches plugin offset  (-π/2 rad)
+MNT1_PITCH_MAX       90     # degrees — matches plugin multiplier (π rad range)
+MNT1_ROLL_MIN         0
+MNT1_ROLL_MAX         0
+MNT1_YAW_MIN          0
+MNT1_YAW_MAX          0
+MNT1_NEUTRAL_Y        0     # neutral pitch = 0° (level)
+
+# Route Mount1 pitch to servo output 5 (channel index 4 in ArduPilotPlugin)
+SERVO5_FUNCTION       7     # 7 = Mount1Pitch
+SERVO5_MIN         1000
+SERVO5_MAX         2000
+SERVO5_TRIM        1500     # neutral = level
+SERVO5_REVERSED       0

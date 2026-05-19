@@ -1,0 +1,94 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="gimbal_runway">
+
+    <physics name="1ms" type="ignore">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"></plugin>
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"></plugin>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"></plugin>
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu"></plugin>
+    <plugin filename="gz-sim-navsat-system"
+            name="gz::sim::systems::NavSat"></plugin>
+
+    <scene>
+      <ambient>1.0 1.0 1.0</ambient>
+      <background>0.8 0.8 0.8</background>
+      <sky/>
+    </scene>
+
+    <spherical_coordinates>
+      <latitude_deg>-35.363262</latitude_deg>
+      <longitude_deg>149.165237</longitude_deg>
+      <elevation>584</elevation>
+      <heading_deg>0</heading_deg>
+      <surface_model>EARTH_WGS84</surface_model>
+    </spherical_coordinates>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.8 0.8 0.8 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- Runway centred at origin, oriented along the Y-axis -->
+    <include>
+      <uri>model://runway</uri>
+      <pose degrees="true">0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Gimbal placed on the runway, slightly above ground -->
+    <include>
+      <uri>model://gimbal_small_1d</uri>
+      <pose>0 0 1.1 1.57 0 0</pose>
+    </include>
+
+    <gui fullscreen="0">
+      <plugin filename="GzScene3D" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.4 0.4 0.4</ambient_light>
+        <background_color>0.8 0.8 0.8</background_color>
+        <camera_pose>5 -5 3 0 0.5 2.4</camera_pose>
+      </plugin>
+
+      <plugin filename="ImageDisplay" name="Camera Feed">
+        <gz-gui>
+          <title>Gimbal Camera Feed</title>
+          <property type="bool" key="showTitleBar">true</property>
+          <property type="string" key="state">floating</property>
+          <property type="double" key="width">640</property>
+          <property type="double" key="height">480</property>
+          <property type="double" key="x">10</property>
+          <property type="double" key="y">10</property>
+        </gz-gui>
+        <topic>/world/gimbal_runway/model/gimbal_small_1d/link/tilt_link/sensor/camera/image</topic>
+      </plugin>
+    </gui>
+
+  </world>
+</sdf>
