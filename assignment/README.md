@@ -1,128 +1,153 @@
-# Crazyflie + ArduPilot SITL in Gazebo Garden
+# BotLab Assignment — Crazyflie + Gimbal in Gazebo Garden
 
-This directory contains a custom crazyflie model wired up for ArduPilot
-SITL control, plus a world and helper scripts.
+This project sets up a **Crazyflie quadrotor** under ArduPilot SITL control and
+a **standalone 1-DOF gimbal** with MAVLink pitch control, both simulated in
+Gazebo Garden.
 
-See [CHANGES.md](CHANGES.md) for the running log of edits.
+---
 
-## Prereqs
+## Prerequisites
 
-1. Gazebo Garden installed (you have `gz sim 7.9.0`).
-2. `ardupilot_gazebo` plugin **built**:
-   ```bash
-   cd ~/botlab_ws/src/ardupilot_gazebo
-   mkdir -p build && cd build
-   GZ_VERSION=garden cmake .. && make -j$(nproc)
-   ```
-   The `GZ_VERSION=garden` is **required** on this box — without it
-   CMake defaults to Harmonic and fails with
-   `target gz-sim::gz-sim not found`.
+- **Gazebo Garden** (`gz sim --version` should report `7.x`)
+- **ArduPilot SITL** toolchain — `sim_vehicle.py` must be on your PATH
+- **pymavlink** — `pip3 install pymavlink`
+- **ardupilot_gazebo plugin** built against Garden:
 
-   (Skip if `~/botlab_ws/src/ardupilot_gazebo/build/libArduPilotPlugin.so`
-   already exists.)
-3. ArduPilot SITL toolchain — `sim_vehicle.py` working
-   (`./Tools/autotest/sim_vehicle.py --help` should print).
+  ```bash
+  cd ~/botlab_ws/src/ardupilot_gazebo
+  mkdir -p build && cd build
+  GZ_VERSION=garden cmake .. && make -j$(nproc)
+  ```
 
-## Run
+---
+
+## Clone and setup
 
 ```bash
-cd ~/botlab_ws/src/assignment
+git clone git@github.com:shloksharma273/botlab_task.git
+cd botlab_task/assignment
+
+# Set Gazebo resource paths and plugin paths
 source env.sh
-gz sim -v4 -r worlds/crazyflie.sdf
 ```
 
-In a second terminal:
+> Run `source env.sh` in **every new terminal** before launching anything.
+
+---
+
+## Run the Crazyflie drone
+
+Open **two terminals**.
+
+**Terminal 1 — Gazebo:**
+```bash
+source assignment/env.sh
+gz sim assignment/worlds/crazyflie.sdf -r
+```
+
+**Terminal 2 — ArduPilot SITL:**
 ```bash
 cd ~/botlab_ws/src/ardupilot
 ./Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-crazyflie \
     --model JSON --map --console
 ```
 
-In the MAVProxy console:
+Once MAVProxy shows `APM: EKF3 IMU0 is using GPS`, the drone is ready.
+
+**Basic flight commands in MAVProxy:**
 ```
 mode GUIDED
 arm throttle
 takeoff 2
-# ... hover ...
 mode LAND
 ```
 
-## Gimbal runway world — MAVLink bridge control
+> First launch ever? Add `-w` to the SITL command to wipe EEPROM and load
+> parameters cleanly. Drop `-w` on all subsequent launches.
 
-### What it does
-Spawns a standalone `gimbal_small_1d` (1-DOF pitch gimbal with camera) on a
-runway in Gazebo. Pitch is controlled over MAVLink using
-`MAV_CMD_DO_MOUNT_CONFIGURE` / `MAV_CMD_DO_MOUNT_CONTROL` — no ArduPilot SITL
-required. A lightweight Python bridge translates MAVLink commands to Gazebo
-joint position commands in real time.
+---
 
-### Terminal 1 — Launch Gazebo
+## Run the gimbal world
 
+The gimbal world spawns a standalone `gimbal_small_1d` on a runway.
+The **camera feed appears inside the Gazebo window** — no extra viewer needed.
+
+Open **three terminals**.
+
+**Terminal 1 — Gazebo:**
 ```bash
-cd ~/botlab_ws/src
 source assignment/env.sh
 gz sim assignment/worlds/gimbal_runway.sdf -r
 ```
 
 The Gazebo GUI opens with a 3D view and a floating **Gimbal Camera Feed**
-window showing the live camera image.
+panel in the top-left corner showing the live camera image.
 
-### Terminal 2 — Start the MAVLink bridge
-
+**Terminal 2 — MAVLink bridge:**
 ```bash
 source assignment/env.sh
 python3 assignment/gimbal_mavlink_bridge.py
 ```
 
-Expected output:
+Wait for:
 ```
 [bridge] listening on udpin:0.0.0.0:14551  (sysid=1 compid=154)
 [bridge] ready — waiting for commands
 ```
 
-### Terminal 3 — Send gimbal commands
-
+**Terminal 3 — Control the gimbal:**
 ```bash
-# Sweep from -45° to +45° and back (default demo)
-python3 assignment/gimbal_control.py --sweep
-
-# Command a single pitch angle  (negative = camera tilts down)
-python3 assignment/gimbal_control.py -- -45
-python3 assignment/gimbal_control.py 30
-
-# Interactive prompt — type angles until Ctrl-D
+# Interactive mode — type a pitch angle and press Enter to move the gimbal
 python3 assignment/gimbal_control.py --interactive
 ```
 
-The bridge prints each received command:
 ```
-[bridge] MOUNT_CONFIGURE  mode=2
-[bridge] MOUNT_CONTROL  pitch=+45.0°  (+0.7854 rad)  → /gimbal/tilt_cmd
+Enter pitch in degrees [-90, 90]  (Ctrl-D to quit)
+pitch> -45       # tilt camera down
+pitch> 0         # level
+pitch> 45        # tilt camera up
 ```
 
-### Test the joint directly (no bridge needed)
+The bridge confirms each command:
+```
+[bridge] MOUNT_CONTROL  pitch=-45.0°  (-0.7854 rad)  → /gimbal/tilt_cmd
+```
 
+And the gimbal arm visibly rotates in the 3D view.
+
+**Other control modes:**
 ```bash
-gz topic -t /gimbal/tilt_cmd -m gz.msgs.Double -p "data: 0.785"   # +45°
-gz topic -t /gimbal/tilt_cmd -m gz.msgs.Double -p "data: -0.785"  # -45°
-gz topic -t /gimbal/tilt_cmd -m gz.msgs.Double -p "data: 0.0"     # level
+# Automated sweep from -45° to +45° and back
+python3 assignment/gimbal_control.py --sweep
+
+# Single angle command
+python3 assignment/gimbal_control.py -- -45
 ```
 
 ---
 
-## Read sensor data back
+## Project structure
 
-Open a third terminal:
-```bash
-python3 -c "
-from pymavlink import mavutil
-m = mavutil.mavlink_connection('udp:127.0.0.1:14551')
-m.wait_heartbeat()
-m.mav.request_data_stream_send(m.target_system, m.target_component,
-    mavutil.mavlink.MAV_DATA_STREAM_ALL, 50, 1)
-while True:
-    msg = m.recv_match(blocking=True)
-    if msg.get_type() in ('RAW_IMU','ATTITUDE','GLOBAL_POSITION_INT','VFR_HUD'):
-        print(msg.get_type(), msg.to_dict())
-"
 ```
+assignment/
+├── env.sh                    # Sets GZ_SIM_RESOURCE_PATH and plugin paths
+├── crazyflie/                # Crazyflie quad model (ArduPilot-compatible)
+├── gimbal_small_1d/          # 1-DOF pitch gimbal with camera
+├── runway/                   # Runway model (self-contained)
+├── worlds/
+│   ├── crazyflie.sdf         # Crazyflie flight world
+│   └── gimbal_runway.sdf     # Standalone gimbal world with camera display
+├── gimbal_control.py         # MAVLink gimbal controller (GCS side)
+├── gimbal_mavlink_bridge.py  # MAVLink ↔ Gazebo joint bridge
+├── crazyflie_gimbal.parm     # ArduPilot mount parameters (for drone-mounted gimbal)
+├── tuning_params.md          # PID and physics tuning reference
+├── CHANGES.md                # Full log of every change made and why
+└── commands.md               # Quick command reference
+```
+
+---
+
+## See also
+
+- `tuning_params.md` — explanation of every tunable parameter and how it affects flight
+- `CHANGES.md` — detailed log of all design decisions
