@@ -35,8 +35,8 @@ import sys
 import time
 from pymavlink import mavutil
 
-# ArduPilot SITL streams telemetry to 127.0.0.1:14550 by default.
-DEFAULT_CONN = "udpin:0.0.0.0:14550"
+# Bridge listens on 14551; connect outbound so the bridge knows our address.
+DEFAULT_CONN = "udpout:127.0.0.1:14551"
 
 # Must match MNT1_PITCH_MIN / MNT1_PITCH_MAX in crazyflie_gimbal.parm
 PITCH_MIN_DEG = -90.0
@@ -219,8 +219,7 @@ def main() -> None:
     mav = connect(args.conn)
 
     if args.push_params:
-        push_mount_params(mav)
-        time.sleep(0.5)
+        print("[gimbal] --push-params is only needed with ArduPilot SITL; skipping for bridge mode")
 
     mount_configure(mav)
     time.sleep(0.3)

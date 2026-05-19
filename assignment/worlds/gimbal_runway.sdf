@@ -59,7 +59,7 @@
     <!-- Gimbal placed on the runway, slightly above ground -->
     <include>
       <uri>model://gimbal_small_1d</uri>
-      <pose>0 0 1.1 1.57 0 0</pose>
+      <pose>0 0 0.1 1.57 0 0</pose>
     </include>
 
     <gui fullscreen="0">

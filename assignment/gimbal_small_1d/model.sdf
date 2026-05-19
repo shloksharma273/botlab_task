@@ -134,6 +134,11 @@
 
       </sensor>
     </link>
+    <joint name='world_fixed' type='fixed'>
+      <parent>world</parent>
+      <child>base_link</child>
+    </joint>
+
     <joint name='tilt_joint' type='revolute'>
       <parent>base_link</parent>
       <child>tilt_link</child>
@@ -149,5 +154,18 @@
       </axis>
       <pose>0 0 0.02 0 0 0</pose>
     </joint>
+
+    <plugin name="gz::sim::systems::JointPositionController"
+            filename="gz-sim-joint-position-controller-system">
+      <joint_name>tilt_joint</joint_name>
+      <topic>/gimbal/tilt_cmd</topic>
+      <p_gain>0.1</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>0.01</d_gain>
+      <i_max>0.1</i_max>
+      <i_min>-0.1</i_min>
+      <cmd_max>10</cmd_max>
+      <cmd_min>-10</cmd_min>
+    </plugin>
   </model>
 </sdf>
