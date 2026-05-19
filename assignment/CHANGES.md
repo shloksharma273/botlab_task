@@ -533,3 +533,123 @@ python3 assignment/gimbal_control.py --conn tcp:127.0.0.1:5760
 | `crazyflie_gimbal.parm` | New — ArduPilot servo-mount parameters |
 | `gimbal_control.py` | New — MAVLink gimbal controller (pymavlink) |
 
+---
+
+## 2026-05-20 — Standalone gimbal_small_1d in custom runway world
+
+### Context
+The goal was to spawn the `gimbal_small_1d` model (1-DOF pitch gimbal with
+camera) in a custom Gazebo world with a runway, then control it over MAVLink
+using `MAV_CMD_DO_MOUNT_CONFIGURE` and `MAV_CMD_DO_MOUNT_CONTROL` — without
+ArduPilot SITL in the loop. A direct MAVLink ↔ Gazebo bridge was written
+instead.
+
+### Signal path
+```
+gimbal_control.py  (GCS side, pymavlink)
+  → MAV_CMD_DO_MOUNT_CONFIGURE / MAV_CMD_DO_MOUNT_CONTROL
+    → UDP 14551
+      → gimbal_mavlink_bridge.py  (MAVLink component, compid=154)
+        → gz topic pub /gimbal/tilt_cmd  (gz.msgs.Double, radians)
+          → JointPositionController plugin
+            → tilt_joint  (Gazebo physics)
+```
+
+### Changes
+
+#### 1. `worlds/gimbal_runway.sdf` — new world file
+
+Created `assignment/worlds/gimbal_runway.sdf`.
+
+- Standard world-level plugins: Physics, Sensors (ogre2), UserCommands,
+  SceneBroadcaster, Imu, NavSat.
+- `<spherical_coordinates>` set to ArduPilot default home
+  (−35.363262, 149.165237, 584 m).
+- Includes `model://runway` (from `ardupilot_gazebo/models/runway/`) at
+  origin, oriented along the Y-axis.
+- Includes `model://gimbal_small_1d` at `0 0 0.1 -1.57 0 0`.
+- `<gui>` section with two plugins:
+  - `GzScene3D` — 3D viewport, camera at `(5, -5, 3)`.
+  - `ImageDisplay` — floating window subscribed to
+    `/world/gimbal_runway/model/gimbal_small_1d/link/tilt_link/sensor/camera/image`
+    to display the gimbal camera feed live.
+
+Both models are already on `GZ_SIM_RESOURCE_PATH` via `env.sh` — no path
+changes needed.
+
+#### 2. `gimbal_small_1d/model.sdf` — three additions
+
+**A) World-fixed joint** (prevents the model from falling under gravity):
+
+```xml
+<joint name='world_fixed' type='fixed'>
+  <parent>world</parent>
+  <child>base_link</child>
+</joint>
+```
+
+Without this the base had no support: it fell, accelerated to extreme
+coordinates, and triggered an ODE AABB assertion crash:
+```
+ODE INTERNAL ERROR 1: assertion "aabbBound >= dMinIntExact ..." failed in collide()
+```
+
+**B) `JointPositionController` plugin** (drives `tilt_joint` from a topic):
+
+```xml
+<plugin name="gz::sim::systems::JointPositionController"
+        filename="gz-sim-joint-position-controller-system">
+  <joint_name>tilt_joint</joint_name>
+  <topic>/gimbal/tilt_cmd</topic>
+  <p_gain>0.1</p_gain>
+  <i_gain>0.0</i_gain>
+  <d_gain>0.01</d_gain>
+  <i_max>0.1</i_max>
+  <i_min>-0.1</i_min>
+  <cmd_max>10</cmd_max>
+  <cmd_min>-10</cmd_min>
+</plugin>
+```
+
+The plugin was initially placed inside the `<include>` block in the world
+SDF — it silently failed to load in Gazebo Garden. Moving it into
+`model.sdf` directly fixed this.
+
+**PID gain rationale:** `tilt_link` has mass=0.01 kg and inertia=0.00001.
+With P=5 (first attempt), the natural frequency was ~700 rad/s causing
+rapid back-and-forth oscillation. With P=0.1 the natural frequency is
+~100 rad/s; the joint's own physical damping (0.01 N·m·s/rad) plus
+D=0.01 gives a stable, critically-damped response.
+
+#### 3. `gimbal_mavlink_bridge.py` — new MAVLink ↔ Gazebo bridge
+
+Created `assignment/gimbal_mavlink_bridge.py`.
+
+Runs as a minimal MAVLink component (`sysid=1`, `compid=154 MAV_COMP_ID_GIMBAL`):
+
+- Listens on `udpin:0.0.0.0:14551`.
+- Sends heartbeats at 1 Hz on a daemon thread so `gimbal_control.py` can
+  detect it via `wait_heartbeat()`.
+- Handles `MAV_CMD_DO_MOUNT_CONFIGURE`: logs mode, sends `COMMAND_ACK ACCEPTED`.
+- Handles `MAV_CMD_DO_MOUNT_CONTROL`: clamps pitch to ±90°, converts to
+  radians, calls `gz topic pub` via subprocess, sends `COMMAND_ACK ACCEPTED`.
+
+`command_ack_send()` is called with 2 arguments (command, result) — the
+installed pymavlink version does not accept the extended 6-argument form
+used by MAVLink v2.
+
+#### 4. `gimbal_control.py` — updated default connection
+
+Changed `DEFAULT_CONN` from `udpin:0.0.0.0:14550` (listening for ArduPilot
+SITL heartbeat) to `udpout:127.0.0.1:14551` (dialling the bridge directly).
+The `--push-params` flag now prints an informational message instead of
+sending ArduPilot parameter sets that the bridge would ignore.
+
+### Files changed
+| File | Change |
+|------|--------|
+| `worlds/gimbal_runway.sdf` | New — runway world with gimbal and camera display |
+| `gimbal_small_1d/model.sdf` | Added world-fixed joint, JointPositionController plugin |
+| `gimbal_mavlink_bridge.py` | New — MAVLink ↔ Gazebo joint bridge |
+| `gimbal_control.py` | Updated default connection to target bridge on port 14551 |
+
