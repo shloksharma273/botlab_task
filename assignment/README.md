@@ -47,6 +47,69 @@ takeoff 2
 mode LAND
 ```
 
+## Gimbal runway world — MAVLink bridge control
+
+### What it does
+Spawns a standalone `gimbal_small_1d` (1-DOF pitch gimbal with camera) on a
+runway in Gazebo. Pitch is controlled over MAVLink using
+`MAV_CMD_DO_MOUNT_CONFIGURE` / `MAV_CMD_DO_MOUNT_CONTROL` — no ArduPilot SITL
+required. A lightweight Python bridge translates MAVLink commands to Gazebo
+joint position commands in real time.
+
+### Terminal 1 — Launch Gazebo
+
+```bash
+cd ~/botlab_ws/src
+source assignment/env.sh
+gz sim assignment/worlds/gimbal_runway.sdf -r
+```
+
+The Gazebo GUI opens with a 3D view and a floating **Gimbal Camera Feed**
+window showing the live camera image.
+
+### Terminal 2 — Start the MAVLink bridge
+
+```bash
+source assignment/env.sh
+python3 assignment/gimbal_mavlink_bridge.py
+```
+
+Expected output:
+```
+[bridge] listening on udpin:0.0.0.0:14551  (sysid=1 compid=154)
+[bridge] ready — waiting for commands
+```
+
+### Terminal 3 — Send gimbal commands
+
+```bash
+# Sweep from -45° to +45° and back (default demo)
+python3 assignment/gimbal_control.py --sweep
+
+# Command a single pitch angle  (negative = camera tilts down)
+python3 assignment/gimbal_control.py -- -45
+python3 assignment/gimbal_control.py 30
+
+# Interactive prompt — type angles until Ctrl-D
+python3 assignment/gimbal_control.py --interactive
+```
+
+The bridge prints each received command:
+```
+[bridge] MOUNT_CONFIGURE  mode=2
+[bridge] MOUNT_CONTROL  pitch=+45.0°  (+0.7854 rad)  → /gimbal/tilt_cmd
+```
+
+### Test the joint directly (no bridge needed)
+
+```bash
+gz topic -t /gimbal/tilt_cmd -m gz.msgs.Double -p "data: 0.785"   # +45°
+gz topic -t /gimbal/tilt_cmd -m gz.msgs.Double -p "data: -0.785"  # -45°
+gz topic -t /gimbal/tilt_cmd -m gz.msgs.Double -p "data: 0.0"     # level
+```
+
+---
+
 ## Read sensor data back
 
 Open a third terminal:
